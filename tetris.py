@@ -4,14 +4,15 @@ import time
 import random
 
 """ TODO:
-    - 3 different frames rather than 1 (pack frame to right and left of canvas)
-    - Menubar and title (obvious)
     - add more block shapes (add to block_shapes and test in tetris __init__ self.add_block())
-    - score (obvious)
+    - display score
+    - Start/Game over screens?
+    - Help pop up
+    - Write function that checks which rows are full
 """
 
 GRID_SIZE = 25
-GAME_SIZE = (500,500)
+GAME_SIZE = (300,500)
 
 # Polygon points (top left is (0,0))
 block_shapes = {
@@ -22,14 +23,43 @@ block_shapes = {
 class Tetris:
     def __init__(self,master):
         self._master = master
+        master.title("Tetris")
+        
+        self._score = 0
+        self._game_speed = 100
+        
+        # Menubar: File -> *New Game *Help
+        menubar = tk.Menu(self._master)
+        self._master.config(menu=menubar)
+        file_menu = tk.Menu(menubar)
+        menubar.add_cascade(label="File",menu=file_menu)
+        file_menu.add_command(label="New Game",command=self.restart_app)
+        file_menu.add_command(label="Help")
+
+        # Left frame
+        self._lf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
+        self._lf.pack(side=tk.LEFT)
+        
+        # Game canvas
         self._canvas = tk.Canvas(master,width=GAME_SIZE[0],height=GAME_SIZE[1]) #Game view canvas
-        self._canvas.pack(fill='both',expand=True)
+        self._canvas.pack(side=tk.LEFT,fill='both',expand=True)
+
+        # Right frame
+        self._rf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
+        self._rf.pack(side=tk.LEFT)
+        
         self._blocks = [] #Blocks currently in the game
         self.add_block('long_block','red',4)
         self._master.bind('<Key>',self.move_block)
-        self._game_speed = 100
+        
         self.descend_blocks() # Start moving the blocks downwards each step
 
+    def restart_app(self):
+        for block in self._blocks:
+            self._canvas.delete(block.get_block())
+        self._blocks = []
+        self.add_block('long_block','red',4)
+        
     def add_block(self,shape,colour,x_pos):
         """ Adds block object into game.
         Parameters:
@@ -71,7 +101,7 @@ class Tetris:
                 for i in range(6):
                     rgb += random.choice(['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'])
                     
-                self.add_block('long_block','#' + rgb, int(random.random()*20))
+                self.add_block('long_block','#' + rgb, int(random.random()*(GAME_SIZE[0] // GRID_SIZE)))
                 
     def descend_blocks(self):
         """ Lowers block that isnt frozen by one grid position every step. """
@@ -93,7 +123,7 @@ class Tetris:
             for i in range(6):
                 rgb += random.choice(['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'])
                 
-            self.add_block('long_block','#' + rgb, int(random.random()*20))
+            self.add_block('long_block','#' + rgb, int(random.random()*(GAME_SIZE[0] // GRID_SIZE)))
 
 class Block(object):
     """ this is a B l o c c"""
