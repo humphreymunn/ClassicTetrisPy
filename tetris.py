@@ -4,11 +4,13 @@ import time
 import random
 
 """ TODO:
-    - add more block shapes (add to block_shapes and test in tetris __init__ self.add_block())
+    - add more block shapes
     - display score
     - Start/Game over screens?
     - Help pop up
-    - Write function that checks which rows are full
+    - Pause functionality
+    - check gameover (if any blocks are in top row, if so print game over message)
+    - remove row if it is full
 """
 
 GRID_SIZE = 25
@@ -17,7 +19,8 @@ GAME_SIZE = (300,500)
 # Polygon points (top left is (0,0))
 block_shapes = {
     'long_block': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),(GRID_SIZE,GRID_SIZE*4-GRID_SIZE),(0,GRID_SIZE*4-GRID_SIZE)],
-    'long_block_rotate': [(-GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE*2,GRID_SIZE*3),(-GRID_SIZE*2,GRID_SIZE*3)]
+    'long_block_rotate': [(-GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE*2,GRID_SIZE*3),(-GRID_SIZE*2,GRID_SIZE*3)],
+    'square_block': [(0,-GRID_SIZE),(GRID_SIZE*2,-GRID_SIZE),(GRID_SIZE*2,GRID_SIZE*2 - GRID_SIZE),(0,GRID_SIZE*2 - GRID_SIZE)]
 }
 
 class Tetris:
@@ -49,7 +52,7 @@ class Tetris:
         self._rf.pack(side=tk.LEFT)
         
         self._blocks = [] #Blocks currently in the game
-        self.add_block('long_block','red',4)
+        self.add_block()
         self._master.bind('<Key>',self.move_block)
         
         self.descend_blocks() # Start moving the blocks downwards each step
@@ -58,16 +61,25 @@ class Tetris:
         for block in self._blocks:
             self._canvas.delete(block.get_block())
         self._blocks = []
-        self.add_block('long_block','red',4)
+        self.add_block()
+ 
+    def add_block(self):
+        """ Adds block object into game."""
+        self.check_rows()
+        rgb = '#'
+        for i in range(6):
+            rgb += random.choice(['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'])
+
+        shape = random.choice(['long_block','square_block'])
+        colour = rgb
+        if shape == 'long_block':
+            width = GRID_SIZE
+        else:
+            width = GRID_SIZE*2
+            
+        x_pos = GRID_SIZE*int(random.random()*((GAME_SIZE[0]-width + GRID_SIZE) // GRID_SIZE))
         
-    def add_block(self,shape,colour,x_pos):
-        """ Adds block object into game.
-        Parameters:
-            shape (str): the key for which block_shape to select.
-            colour (str): colour of block
-            x_pos (int): Which grid x position to spawn block (e.g. x_pos = 1 will spawn at the first grid)
-        """
-        self._blocks.append(Block(self._canvas,shape,colour,GRID_SIZE*x_pos))
+        self._blocks.append(Block(self._canvas,shape,colour,x_pos))
 
     def move_block(self,event):
         """ Moves/rotates block that is not frozen. Also checks if block is frozen and then creates a new block
@@ -97,11 +109,8 @@ class Tetris:
                     
             # If all blocks are frozen, create new block
             else:
-                rgb = ''
-                for i in range(6):
-                    rgb += random.choice(['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'])
                     
-                self.add_block('long_block','#' + rgb, int(random.random()*(GAME_SIZE[0] // GRID_SIZE)))
+                self.add_block()
                 
     def descend_blocks(self):
         """ Lowers block that isnt frozen by one grid position every step. """
@@ -123,7 +132,30 @@ class Tetris:
             for i in range(6):
                 rgb += random.choice(['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'])
                 
-            self.add_block('long_block','#' + rgb, int(random.random()*(GAME_SIZE[0] // GRID_SIZE)))
+            self.add_block()
+
+    def check_rows(self):
+        """ Checks each row in the game and (currently) prints rows that are full."""
+        
+        if len(self._blocks) == 0: return
+
+        # Loop through each row and column
+        for row in range(0,GAME_SIZE[1]//GRID_SIZE):
+            
+            row_columns_full = True # Originally set to true, and will stay true if all columns filled in row
+            
+            for column in range(0,(GAME_SIZE[0]-GRID_SIZE + 1)//GRID_SIZE):
+                if row_columns_full:
+                    column_full = False # Check each column and set to true if there is a block at this position
+                    for block in self._blocks:
+                        if not column_full:
+                            column_full = (block.at_position((column*GRID_SIZE,row*GRID_SIZE)))
+                    # If no blocks are at this column, set columns_full false
+                    if not column_full:
+                        row_columns_full = False
+                
+            if row_columns_full:
+                print('row',row+1,'full')
 
 class Block(object):
     """ this is a B l o c c"""
@@ -153,7 +185,14 @@ class Block(object):
 
         # If block is on edge of game screen, don't move and make frozen if block reached bottom y value.
         
-        if self._shape == 'long_block_rotate':
+        if self._shape == 'long_block':
+            if dy > 0 and self._y_pos >= GAME_SIZE[1]-GRID_SIZE*4:
+                direction = (0,0)
+                if self._frozen > 0: self._frozen -= 1
+            if (dx > 0 and self._x_pos >= GAME_SIZE[0]-GRID_SIZE) or (dx < 0 and self._x_pos <= 0):
+                direction = (0,0)
+
+        elif self._shape == 'long_block_rotate':
             if dy > 0 and self._y_pos >= GAME_SIZE[1]-GRID_SIZE*3:
                 direction = (0,0)
                 if self._frozen > 0: self._frozen -= 1
@@ -161,14 +200,14 @@ class Block(object):
             if (dx > 0 and self._x_pos >= GAME_SIZE[0]-GRID_SIZE*2) or (dx < 0 and self._x_pos-GRID_SIZE*2 <= 0):
                 direction = (0,0)
 
-        elif self._shape == 'long_block':
-            if dy > 0 and self._y_pos >= GAME_SIZE[1]-GRID_SIZE*4:
+        elif self._shape == 'square_block':
+            if dy > 0 and self._y_pos >= GAME_SIZE[1]-GRID_SIZE*2:
                 direction = (0,0)
                 if self._frozen > 0: self._frozen -= 1
-            if (dx > 0 and self._x_pos >= GAME_SIZE[0]-GRID_SIZE) or (dx < 0 and self._x_pos <= 0):
+
+            if (dx > 0 and self._x_pos >= GAME_SIZE[0]-GRID_SIZE*2) or (dx < 0 and self._x_pos <= 0):
                 direction = (0,0)
 
-        
         can_move = True
 
         # Test if blocks are in the way of new position (where block is moving). If so, set can_move = False
@@ -218,6 +257,29 @@ class Block(object):
                     self._frozen -= 1
                     return
 
+        elif self._shape == 'square_block':
+
+            if dx != 0:
+                for pos in range(2):
+                    if can_move:
+                        if dx > 0:
+                            # Test position to the right of each of the 2 right squares of the square block.
+                            can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*3,self._y_pos + GRID_SIZE*pos))
+                        elif dx < 0:
+                            # Test position to the left of each of the 2 left squares of the square block.
+                            can_move = not self.check_collision(blocks,(self._x_pos-GRID_SIZE,self._y_pos + GRID_SIZE*pos))
+            elif dy > 0:
+                # Test position below the bottom 2 squares of the square block,
+                # and if there is something there then freeze block.
+                
+                for pos in range(2):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos + GRID_SIZE*pos + 1,self._y_pos + GRID_SIZE*2))
+
+                if not can_move and self._frozen > 0:
+                    self._frozen -= 1
+                    return 
+                                
         # If block will not collide and isn't frozen, move it in specified direction.
         if can_move and self._frozen > 0:
             self._canvas.move(self.get_block(),direction[0],direction[1])
@@ -260,6 +322,13 @@ class Block(object):
             if x in range(self._x_pos - GRID_SIZE*2,self._x_pos + GRID_SIZE*2+1)\
                and y == self._y_pos + GRID_SIZE*2: return True
 
+            else: return False
+
+        elif self._shape == 'square_block':
+
+            if x in range(self._x_pos,self._x_pos + GRID_SIZE*2) \
+               and y in range(self._y_pos,self._y_pos+GRID_SIZE*2 + 1): return True
+            
             else: return False
                 
     def rotate(self,deg,blocks):
