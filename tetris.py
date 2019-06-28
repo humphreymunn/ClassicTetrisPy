@@ -10,7 +10,7 @@ import random
     - Help pop up
     - Pause functionality
     - check gameover (if any blocks are in top row, if so print game over message)
-    - remove row if it is full
+    
 """
 
 GRID_SIZE = 25
@@ -18,9 +18,14 @@ GAME_SIZE = (300,500)
 
 # Polygon points (top left is (0,0))
 block_shapes = {
-    'long_block': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),(GRID_SIZE,GRID_SIZE*4-GRID_SIZE),(0,GRID_SIZE*4-GRID_SIZE)],
-    'long_block_rotate': [(-GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE*2,GRID_SIZE*3),(-GRID_SIZE*2,GRID_SIZE*3)],
-    'square_block': [(0,-GRID_SIZE),(GRID_SIZE*2,-GRID_SIZE),(GRID_SIZE*2,GRID_SIZE*2 - GRID_SIZE),(0,GRID_SIZE*2 - GRID_SIZE)]
+    'long_block': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
+                   (GRID_SIZE,GRID_SIZE*4-GRID_SIZE),(0,GRID_SIZE*4-GRID_SIZE)],
+    
+    'long_block_rotate': [(-GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE*2,GRID_SIZE*2),\
+                          (GRID_SIZE*2,GRID_SIZE*3),(-GRID_SIZE*2,GRID_SIZE*3)],
+    
+    'square_block': [(0,-GRID_SIZE),(GRID_SIZE*2,-GRID_SIZE),\
+                     (GRID_SIZE*2,GRID_SIZE*2 - GRID_SIZE),(0,GRID_SIZE*2 - GRID_SIZE)]
 }
 
 class Tetris:
@@ -96,7 +101,7 @@ class Tetris:
                     block_to_move = block
                     break
 
-            if block_to_move != False:
+            if block_to_move != False and block_to_move._control:
                 if key == "Left":
                     block_to_move.move((-GRID_SIZE,0),self._blocks)
                 elif key == "Right":
@@ -108,8 +113,7 @@ class Tetris:
                     block_to_move.rotate(0,self._blocks)
                     
             # If all blocks are frozen, create new block
-            else:
-                    
+            elif not block_to_move:
                 self.add_block()
                 
     def descend_blocks(self):
@@ -139,24 +143,48 @@ class Tetris:
         
         if len(self._blocks) == 0: return
 
+        rows_full = 0
+        blocks_to_delete = []
         # Loop through each row and column
         for row in range(0,GAME_SIZE[1]//GRID_SIZE):
-            
+            blocks_in_row = []
             row_columns_full = True # Originally set to true, and will stay true if all columns filled in row
             
-            for column in range(0,(GAME_SIZE[0]-GRID_SIZE + 1)//GRID_SIZE):
+            for column in range(0,(GAME_SIZE[0])//GRID_SIZE):
                 if row_columns_full:
-                    column_full = False # Check each column and set to true if there is a block at this position
+                    column_full = False # Check current column and set to true if there is a block at this position
                     for block in self._blocks:
+                        block_at_position = (block.at_position((column*GRID_SIZE,row*GRID_SIZE)))
+                        if block_at_position and block not in blocks_in_row: blocks_in_row.append(block) 
                         if not column_full:
-                            column_full = (block.at_position((column*GRID_SIZE,row*GRID_SIZE)))
+                            column_full = block_at_position
+                            
+
                     # If no blocks are at this column, set columns_full false
                     if not column_full:
                         row_columns_full = False
                 
             if row_columns_full:
-                print('row',row+1,'full')
+                rows_full += 1
+                #print('row',row+1,'full')
+                blocks_to_delete.extend(blocks_in_row)
 
+        if rows_full > 0:
+            self._score += rows_full
+            print('score:',self._score)
+
+            for deleted_block in blocks_to_delete:
+                if deleted_block in self._blocks:
+                    deleted_block._canvas.delete(deleted_block.get_block())
+                    del self._blocks[self._blocks.index(deleted_block)]
+
+            for block in self._blocks:
+                block._frozen = 1
+                block._control = False
+                block.move((0,GRID_SIZE),self._blocks)
+
+                    
+                    
 class Block(object):
     """ this is a B l o c c"""
     def __init__(self,canvas,shape,colour,x_pos):
@@ -174,6 +202,7 @@ class Block(object):
         self._block_shape = canvas.create_polygon(block_shapes[shape],fill=colour)
         self._canvas.move(self.get_block(),self._x_pos,0)
         self._frozen = 2 # 2 when unfrozen, 1 when 1 step, <= 0 if frozen
+        self._control = True
 
     def get_block(self):
         return self._block_shape #polygon shape
@@ -264,7 +293,7 @@ class Block(object):
                     if can_move:
                         if dx > 0:
                             # Test position to the right of each of the 2 right squares of the square block.
-                            can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*3,self._y_pos + GRID_SIZE*pos))
+                            can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*2,self._y_pos + GRID_SIZE*pos))
                         elif dx < 0:
                             # Test position to the left of each of the 2 left squares of the square block.
                             can_move = not self.check_collision(blocks,(self._x_pos-GRID_SIZE,self._y_pos + GRID_SIZE*pos))
@@ -327,7 +356,7 @@ class Block(object):
         elif self._shape == 'square_block':
 
             if x in range(self._x_pos,self._x_pos + GRID_SIZE*2) \
-               and y in range(self._y_pos,self._y_pos+GRID_SIZE*2 + 1): return True
+               and y in range(self._y_pos,self._y_pos+GRID_SIZE + 1): return True
             
             else: return False
                 
