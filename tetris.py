@@ -10,7 +10,7 @@ import random
     - Help pop up
     - Pause functionality
     - check gameover (if any blocks are in top row, if so print game over message)
-    
+    - increase speed based on score
 """
 
 GRID_SIZE = 25
@@ -33,9 +33,6 @@ class Tetris:
         self._master = master
         master.title("Tetris")
         
-        self._score = 0
-        self._game_speed = 100
-        
         # Menubar: File -> *New Game *Help
         menubar = tk.Menu(self._master)
         self._master.config(menu=menubar)
@@ -56,17 +53,23 @@ class Tetris:
         self._rf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
         self._rf.pack(side=tk.LEFT)
         
-        self._blocks = [] #Blocks currently in the game
-        self.add_block()
         self._master.bind('<Key>',self.move_block)
+
+        self.new_game()
         
         self.descend_blocks() # Start moving the blocks downwards each step
+        
+    def new_game(self):
+        
+        self._blocks = [] #Blocks currently in the game
+        self.add_block()
+        self._score = 0
+        self._game_speed = 100
 
     def restart_app(self):
         for block in self._blocks:
             self._canvas.delete(block.get_block())
-        self._blocks = []
-        self.add_block()
+        self.new_game()
  
     def add_block(self):
         """ Adds block object into game."""
@@ -117,19 +120,22 @@ class Tetris:
                 self.add_block()
                 
     def descend_blocks(self):
-        """ Lowers block that isnt frozen by one grid position every step. """
+        """ Lowers blocks that arent frozen by one grid position every step. """
 
         # Call this function to itself every step (game_speed)
         self._master.after(self._game_speed,self.descend_blocks)
         
-        block_to_move = False
-        # selects oldest block created that isn't frozen
+        blocks_to_move = [] # Descend all blocks that aren't frozen
+        
+        # adds unfrozen blocks to list
         for block in self._blocks:
             if block._frozen > 0:
-                block_to_move = block
-                break
-        # Move block down one grid pos
-        if block_to_move != False: block_to_move.move((0,GRID_SIZE),self._blocks)
+                blocks_to_move.append(block)
+
+        # Move each block down one grid pos
+        if blocks_to_move != []:
+            for block in blocks_to_move:
+                block.move((0,GRID_SIZE),self._blocks)
         # If all blocks frozen create a new one
         else:
             rgb = ''
@@ -348,7 +354,7 @@ class Block(object):
             
         elif self._shape == 'long_block_rotate':
             
-            if x in range(self._x_pos - GRID_SIZE*2,self._x_pos + GRID_SIZE*2+1)\
+            if x in range(self._x_pos - GRID_SIZE*2,self._x_pos + GRID_SIZE*2)\
                and y == self._y_pos + GRID_SIZE*2: return True
 
             else: return False
