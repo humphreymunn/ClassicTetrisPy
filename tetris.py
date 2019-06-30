@@ -3,13 +3,13 @@ import tkinter as tk
 import time
 import random
 
+from tkinter import messagebox
+
 """ TODO:
     - add more block shapes
     - display score
     - Start/Game over screens?
     - Help pop up
-    - Pause functionality
-    - check gameover (if any blocks are in top row, if so print game over message)
     - increase speed based on score
 """
 
@@ -18,6 +18,7 @@ GAME_SIZE = (300,500)
 
 # Polygon points (top left is (0,0))
 block_shapes = {
+    
     'long_block': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
                    (GRID_SIZE,GRID_SIZE*4-GRID_SIZE),(0,GRID_SIZE*4-GRID_SIZE)],
     
@@ -30,6 +31,7 @@ block_shapes = {
 
 class Tetris:
     def __init__(self,master):
+        
         self._master = master
         master.title("Tetris")
         
@@ -38,7 +40,7 @@ class Tetris:
         self._master.config(menu=menubar)
         file_menu = tk.Menu(menubar)
         menubar.add_cascade(label="File",menu=file_menu)
-        file_menu.add_command(label="New Game",command=self.restart_app)
+        file_menu.add_command(label="New Game",command=self.restart_game)
         file_menu.add_command(label="Help")
 
         # Left frame
@@ -55,25 +57,46 @@ class Tetris:
         
         self._master.bind('<Key>',self.move_block)
 
+        self._paused = False
+        self._game_over = False
         self.new_game()
         
         self.descend_blocks() # Start moving the blocks downwards each step
         
     def new_game(self):
-        
+        """ Initialises game."""
         self._blocks = [] #Blocks currently in the game
+        self._paused = False
+        self._game_over = False
         self.add_block()
         self._score = 0
         self._game_speed = 100
 
-    def restart_app(self):
+    def restart_game(self):
+        """ Restarts game by removing blocks then reinitialising game."""
         for block in self._blocks:
             self._canvas.delete(block.get_block())
         self.new_game()
- 
+
+    def pause(self):
+        """Toggles pause."""
+        self._paused = not self._paused
+
+    def check_game_over(self):
+        for block in self._blocks:
+            if block._frozen == 0 and block._y_pos <= GRID_SIZE:
+                self._game_over = True
+                self._paused = True
+                break
+        if self._game_over:
+            if messagebox.showinfo("Tetris", "GAME OVER"):
+                self.restart_game()
+        return self._game_over
+            
     def add_block(self):
         """ Adds block object into game."""
         self.check_rows()
+        if not self._game_over: self.check_game_over()
         rgb = '#'
         for i in range(6):
             rgb += random.choice(['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'])
@@ -92,9 +115,18 @@ class Tetris:
     def move_block(self,event):
         """ Moves/rotates block that is not frozen. Also checks if block is frozen and then creates a new block
         with random hex colour.
-        Parameters: event (key): Key event to move or rotate block.
+        Parameters:
+            event (key): Key event to move or rotate block.
         """
-        key = event.keysym # change key event into a string containing key character
+        key = (event.keysym).upper() # change key event into a string containing key character
+
+        if key == 'P':
+            self.pause()
+            print('pause',self._paused)
+            return
+        
+        elif self._paused: return
+        
         if len(self._blocks) > 0:
             
             block_to_move = False
@@ -103,16 +135,16 @@ class Tetris:
                 if block._frozen > 0:
                     block_to_move = block
                     break
-
+                
             if block_to_move != False and block_to_move._control:
-                if key == "Left":
+                if key == "LEFT":
                     block_to_move.move((-GRID_SIZE,0),self._blocks)
-                elif key == "Right":
+                elif key == "RIGHT":
                     block_to_move.move((GRID_SIZE,0),self._blocks)
-                elif key == "Down":
+                elif key == "DOWN":
                     block_to_move.move((0,GRID_SIZE),self._blocks)
                     #del self._blocks[0]
-                elif key == 'z' or key == 'x':
+                elif key == 'Z' or key == 'X':
                     block_to_move.rotate(0,self._blocks)
                     
             # If all blocks are frozen, create new block
@@ -121,9 +153,12 @@ class Tetris:
                 
     def descend_blocks(self):
         """ Lowers blocks that arent frozen by one grid position every step. """
-
+        
         # Call this function to itself every step (game_speed)
         self._master.after(self._game_speed,self.descend_blocks)
+
+        if self._paused: return
+        if self.check_game_over(): return
         
         blocks_to_move = [] # Descend all blocks that aren't frozen
         
@@ -145,12 +180,14 @@ class Tetris:
             self.add_block()
 
     def check_rows(self):
-        """ Checks each row in the game and (currently) prints rows that are full."""
-        
+        """ Checks each row in the game and removes each block in rows that are full, then adds to player's
+            score depending on how many rows are cleared. """
+
         if len(self._blocks) == 0: return
 
-        rows_full = 0
-        blocks_to_delete = []
+        rows_full = 0 # Used to add to score, e.g. 2 rows full adds 2 to score
+        blocks_to_delete = [] # Blocks that are in full rows
+        
         # Loop through each row and column
         for row in range(0,GAME_SIZE[1]//GRID_SIZE):
             blocks_in_row = []
@@ -160,8 +197,11 @@ class Tetris:
                 if row_columns_full:
                     column_full = False # Check current column and set to true if there is a block at this position
                     for block in self._blocks:
-                        block_at_position = (block.at_position((column*GRID_SIZE,row*GRID_SIZE)))
-                        if block_at_position and block not in blocks_in_row: blocks_in_row.append(block) 
+                        block_at_position = block.at_position((column*GRID_SIZE,row*GRID_SIZE))
+                        # If block is in row add it to blocks_in_row
+                        if block_at_position and block not in blocks_in_row: blocks_in_row.append(block)
+
+                        # If there is any block at this position, set column_full to True
                         if not column_full:
                             column_full = block_at_position
                             
@@ -169,12 +209,15 @@ class Tetris:
                     # If no blocks are at this column, set columns_full false
                     if not column_full:
                         row_columns_full = False
-                
+
+            # If every column is full in row...
             if row_columns_full:
                 rows_full += 1
-                #print('row',row+1,'full')
                 blocks_to_delete.extend(blocks_in_row)
+                #print('row',row+1,'full')
 
+        # If there are full rows, increase score, delete each block in those rows,
+        # then descend each block
         if rows_full > 0:
             self._score += rows_full
             print('score:',self._score)
