@@ -11,12 +11,14 @@ from tkinter import messagebox
     - Start/Game over screens?
     - Help pop up
     - increase speed based on score
+    - Write more efficient methods for moving and rotating
+    - add code for L block rotation
 """
 
 GRID_SIZE = 25
 GAME_SIZE = (300,500)
 
-shape_types = ('i_block','i_block_r1','o_block','l_block') # Shape type constants
+shape_types = ('i_block','i_block_r1','o_block','l_block','l_block_r1','l_block_r2','l_block_r3') # Shape type constants
 
 # Polygon points (top left is (0,0))
 block_shapes = {
@@ -33,7 +35,20 @@ block_shapes = {
     'l_block': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
                     (GRID_SIZE,GRID_SIZE*2-GRID_SIZE),(GRID_SIZE*2,GRID_SIZE*2-GRID_SIZE),\
                         (GRID_SIZE*2,GRID_SIZE*3-GRID_SIZE),(0,GRID_SIZE*3-GRID_SIZE)],
-    'l_block_r1': []
+    
+    'l_block_r1': [(-GRID_SIZE,0),(GRID_SIZE*2,0),\
+                   (GRID_SIZE*2,GRID_SIZE),(0,GRID_SIZE),\
+                   (0,GRID_SIZE*2),(-GRID_SIZE,GRID_SIZE*2)],
+
+    'l_block_r2': [(-GRID_SIZE,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
+                       (GRID_SIZE,GRID_SIZE*3-GRID_SIZE),(0,GRID_SIZE*3-GRID_SIZE),\
+                           (0,0),(-GRID_SIZE,0)],
+
+
+    'l_block_r3': [(-GRID_SIZE,GRID_SIZE),(GRID_SIZE,GRID_SIZE),\
+                   (GRID_SIZE,0),(GRID_SIZE*2,0),\
+                   (GRID_SIZE*2,GRID_SIZE*2),(-GRID_SIZE,GRID_SIZE*2)]
+    
     
 }
 
@@ -265,43 +280,54 @@ class Block(object):
     def get_block(self):
         return self._block_shape #polygon shape
 
+    def check_boundaries(self,x_bounds,y_bounds):
+        """ Check if a collision will occur with the edge of the game.
+            Params:
+                x_bounds (tuple): (dx,x_bound1,x_bound2)
+                    dx (int): x direction
+                    x_bound1 (int): left side of screen pos
+                    x_bound2 (int): right side of screen pos
+                y_bounds (tuple): (dy,y_bound)
+                    dy (int): y direction
+                    y_bound (int): bottom side of screen pos
+        """
+        if y_bounds[0] > 0 and self._y_pos >= y_bounds[1]:
+            if self._frozen > 0: self._frozen -= 1
+            return (0,0)
+        
+        elif (x_bounds[0] < 0 and self._x_pos <= x_bounds[1]) or \
+             (x_bounds[0] > 0 and self._x_pos >= x_bounds[2]):
+            return (0,0)
+        
     def move(self,direction,blocks):
-        """ Disgusting collision stuff >:( """
+        """ collision stuff >:( """
         
         dx,dy = direction
 
-        # If block is on edge of game screen, don't move and make frozen if block reached bottom y value.
-        
-        if self._shape == shape_types[0]:
-            if dy > 0 and self._y_pos >= GAME_SIZE[1]-GRID_SIZE*4:
-                direction = (0,0)
-                if self._frozen > 0: self._frozen -= 1
-            if (dx > 0 and self._x_pos >= GAME_SIZE[0]-GRID_SIZE) or (dx < 0 and self._x_pos <= 0):
-                direction = (0,0)
+        # If block is on edge of game screen, don't move, and make frozen if block reached bottom y value.
 
+        if self._shape == shape_types[0]:
+            x_bound,y_bound = (dx,0,GAME_SIZE[0]-GRID_SIZE),(dy,GAME_SIZE[1]-GRID_SIZE*4)
+            
         elif self._shape == shape_types[1]:
-            if dy > 0 and self._y_pos >= GAME_SIZE[1]-GRID_SIZE*3:
-                direction = (0,0)
-                if self._frozen > 0: self._frozen -= 1
-                
-            if (dx > 0 and self._x_pos >= GAME_SIZE[0]-GRID_SIZE*2) or (dx < 0 and self._x_pos-GRID_SIZE*2 <= 0):
-                direction = (0,0)
+            x_bound,y_bound = (dx,GRID_SIZE*2,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*3)
 
         elif self._shape == shape_types[2]:
-            if dy > 0 and self._y_pos >= GAME_SIZE[1]-GRID_SIZE*2:
-                direction = (0,0)
-                if self._frozen > 0: self._frozen -= 1
-
-            if (dx > 0 and self._x_pos >= GAME_SIZE[0]-GRID_SIZE*2) or (dx < 0 and self._x_pos <= 0):
-                direction = (0,0)
+            x_bound,y_bound = (dx,0,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*2)
 
         elif self._shape == shape_types[3]:
-            if dy > 0 and self._y_pos >= GAME_SIZE[1]-GRID_SIZE*3:
-                direction = (0,0)
-                if self._frozen > 0: self._frozen -= 1
-                
-            if (dx > 0 and self._x_pos >= GAME_SIZE[0]-GRID_SIZE*2) or (dx < 0 and self._x_pos <= 0):
-                direction = (0,0)
+            x_bound,y_bound = (dx,0,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*3)
+
+        elif self._shape in [shape_types[4],shape_types[6]]:
+            x_bound,y_bound = (dx,GRID_SIZE,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*3)
+
+        elif self._shape == shape_types[5]:
+            x_bound,y_bound = (dx,GRID_SIZE,GAME_SIZE[0]-GRID_SIZE),(dy,GAME_SIZE[1]-GRID_SIZE*3)
+            
+        else:
+            x_bound,y_bound = (0,0,0),(0,0)
+
+        if self.check_boundaries(x_bound,y_bound) == (0,0): direction = (0,0)
 
         can_move = True
 
@@ -337,7 +363,7 @@ class Block(object):
 
             elif dx < 0:
                 # Test position to the left of the long block.
-                can_move = not self.check_collision(blocks,(self._x_pos - GRID_SIZE*3,self._y_pos + GRID_SIZE*2))
+                can_move = not self.check_collision(blocks,(self._x_pos - GRID_SIZE*3+1,self._y_pos + GRID_SIZE*2))
 
             elif dy > 0:
                 add = [1,0,0,GRID_SIZE-1] # readjustments
@@ -376,8 +402,19 @@ class Block(object):
                     return
 
         elif self._shape == shape_types[3]:
+                
+            if dx > 0:
+                add = [0,0,GRID_SIZE]
+                for pos in range(3):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE+add[pos],self._y_pos + GRID_SIZE*pos))
+                        
+            elif dx < 0:
+                for pos in range(3):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos-GRID_SIZE+1,self._y_pos + GRID_SIZE*pos))
 
-            if dy > 0:
+            elif dy > 0:
                 for pos in range(2):
                     if can_move: 
                         can_move = not(self.check_collision(blocks,(self._x_pos+1 + GRID_SIZE*pos,self._y_pos + GRID_SIZE*3)))
@@ -385,17 +422,66 @@ class Block(object):
                 if not can_move and self._frozen > 0:
                     self._frozen -= 1
                     return
-                
-            elif dx > 0:
-                add = [0,0,GRID_SIZE]
-                for pos in range(3):
+                        
+        elif self._shape == shape_types[4]:
+            if dx > 0:
+                add = [0,-GRID_SIZE*2]
+                for pos in range(2):
                     if can_move:
-                        can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE+add[pos],self._y_pos + GRID_SIZE*pos))
+                        can_move = not self.check_collision(blocks,(self._x_pos + GRID_SIZE*2 + add[pos],self._y_pos + GRID_SIZE*(pos+1)))
             elif dx < 0:
+                for pos in range(2):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos - GRID_SIZE*2 + 1,self._y_pos+GRID_SIZE*(pos+1)))
+            elif dy > 0:
+                add = [GRID_SIZE,0,0]
                 for pos in range(3):
                     if can_move:
-                        can_move = not self.check_collision(blocks,(self._x_pos-GRID_SIZE+1,self._y_pos + GRID_SIZE*pos))
-                                
+                        can_move = not self.check_collision(blocks,(self._x_pos + 1 + GRID_SIZE*(pos-1),self._y_pos + GRID_SIZE*2 + add[pos]))
+                        
+                if not can_move and self._frozen > 0:
+                    self._frozen -= 1
+                    return
+
+        elif self._shape == shape_types[5]:
+            if dx > 0:
+                for pos in range(3):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*2,self._y_pos + GRID_SIZE*pos))
+            elif dx < 0:
+                add = [-GRID_SIZE,0,0]
+                for pos in range(3):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos - GRID_SIZE + add[pos]+1,self._y_pos + GRID_SIZE*pos))
+                        
+            elif dy > 0:
+                add = [GRID_SIZE,GRID_SIZE*3]
+                for pos in range(2):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos + 1 + GRID_SIZE*(pos-1),self._y_pos + add[pos]))
+                        
+                if not can_move and self._frozen > 0:
+                    self._frozen -= 1
+                    return
+
+        elif self._shape == shape_types[6]:
+            if dx > 0:
+                for pos in range(2):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*3,self._y_pos + GRID_SIZE*pos))
+            elif dx < 0:
+                add = [0,-GRID_SIZE*2]
+                for pos in range(2):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos+add[pos],self._y_pos + GRID_SIZE*pos))
+            elif dy > 0:
+                for pos in range(3):
+                    if can_move:
+                        can_move = not self.check_collision(blocks,(self._x_pos - GRID_SIZE + GRID_SIZE*pos,self._y_pos+GRID_SIZE*3))
+                if not can_move and self._frozen > 0:
+                    self._frozen -= 1
+                    return
+            
         # If block will not collide and isn't frozen, move it in specified direction.
         if can_move and self._frozen > 0:
             self._canvas.move(self.get_block(),direction[0],direction[1])
@@ -429,31 +515,59 @@ class Block(object):
         if self._shape == shape_types[0]:
 
             if x in range(self._x_pos,self._x_pos + GRID_SIZE)\
-               and y in range(self._y_pos,self._y_pos+GRID_SIZE*3+1): return True
+               and y in range(self._y_pos,self._y_pos+GRID_SIZE*4): return True
             
             else: return False
             
         elif self._shape == shape_types[1]:
             
             if x in range(self._x_pos - GRID_SIZE*2,self._x_pos + GRID_SIZE*2)\
-               and y == self._y_pos + GRID_SIZE*2: return True
+               and y in range(self._y_pos + GRID_SIZE*2,self._y_pos + GRID_SIZE*3): return True
 
             else: return False
 
         elif self._shape == shape_types[2]:
 
             if x in range(self._x_pos,self._x_pos + GRID_SIZE*2) \
-               and y in range(self._y_pos,self._y_pos+GRID_SIZE + 1): return True
+               and y in range(self._y_pos,self._y_pos+GRID_SIZE*2): return True
             
             else: return False
 
         elif self._shape == shape_types[3]:
+            
             if (x in range(self._x_pos,self._x_pos + GRID_SIZE)\
-               and y in range(self._y_pos,self._y_pos+GRID_SIZE*2+1)) or \
-               (x in range(self._x_pos+GRID_SIZE,self._x_pos+GRID_SIZE*2+1)\
-                and y in range(self._y_pos + GRID_SIZE*2,self._y_pos + GRID_SIZE*3+1)): return True
+               and y in range(self._y_pos,self._y_pos+GRID_SIZE*3)) or \
+               (x in range(self._x_pos+GRID_SIZE,self._x_pos+GRID_SIZE*2)\
+                and y in range(self._y_pos + GRID_SIZE*2,self._y_pos + GRID_SIZE*3)): return True
+            
             else: return False
-                
+
+        elif self._shape == shape_types[4]:
+
+            if (x in range(self._x_pos-GRID_SIZE,self._x_pos + GRID_SIZE*2)\
+                and y in range(self._y_pos+GRID_SIZE,self._y_pos+GRID_SIZE*2)) or \
+                (x in range(self._x_pos-GRID_SIZE,self._x_pos)\
+                 and y in range(self._y_pos+GRID_SIZE*2,self._y_pos+GRID_SIZE*3)): return True
+
+            else: return False
+
+        elif self._shape == shape_types[5]:
+
+            if (x in range(self._x_pos,self._x_pos + GRID_SIZE)\
+                and y in range(self._y_pos,self._y_pos+GRID_SIZE*3)) or \
+                (x in range(self._x_pos-GRID_SIZE,self._x_pos)\
+                 and y in range(self._y_pos,self._y_pos + GRID_SIZE)): return True
+
+            else: return False
+
+        elif self._shape == shape_types[6]:
+
+            if (x in range(self._x_pos-GRID_SIZE,self._x_pos + GRID_SIZE*2)\
+                and y in range(self._y_pos+GRID_SIZE*2,self._y_pos+GRID_SIZE*3)) or \
+                (x in range(self._x_pos+GRID_SIZE,self._x_pos+GRID_SIZE*2)\
+                 and y in range(self._y_pos+GRID_SIZE,self._y_pos+GRID_SIZE*2)): return True
+            
+            else: return False
     def rotate(self,deg,blocks):
         """ Rotate block left/right depending on deg (degree), if there is no collision at the rotated position.
             Parameters:
@@ -492,6 +606,40 @@ class Block(object):
                     self._shape = shape_types[0]
                     self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
                     # ^ This is used as rotated block auto generates at (0,0)
+
+            elif self._shape == shape_types[3]:
+                if can_rotate:
+                    self._canvas.delete(self.get_block())
+                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[4]],fill=self._colour)
+                    self._shape = shape_types[4]
+                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
+                    # ^ This is used as rotated block auto generates at (0,0)
+
+            elif self._shape == shape_types[4]:
+                if can_rotate:
+                    self._canvas.delete(self.get_block())
+                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[5]],fill=self._colour)
+                    self._shape = shape_types[5]
+                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
+                    # ^ This is used as rotated block auto generates at (0,0)
+
+            elif self._shape == shape_types[5]:
+                if can_rotate:
+                    self._canvas.delete(self.get_block())
+                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[6]],fill=self._colour)
+                    self._shape = shape_types[6]
+                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
+                    # ^ This is used as rotated block auto generates at (0,0)
+
+            elif self._shape == shape_types[6]:
+                if can_rotate:
+                    self._canvas.delete(self.get_block())
+                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[3]],fill=self._colour)
+                    self._shape = shape_types[3]
+                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
+                    # ^ This is used as rotated block auto generates at (0,0)
+
+
 
            
 if __name__ == '__main__':
