@@ -10,12 +10,13 @@ from tkinter import messagebox
     - display score
     - Start/Game over screens?
     - Help pop up
-    - increase speed based on score
-    - Write more efficient methods for rotating
+    - improve keyboard input (e.g. down arrow slow)
+    - Game over change ??
 """
 
 GRID_SIZE = 25
 GAME_SIZE = (300,500)
+GAME_SPEED_START = 100
 
 shape_types = ('i_block','i_block_r1','o_block','l_block','l_block_r1','l_block_r2','l_block_r3') # Shape type constants
 
@@ -92,7 +93,7 @@ class Tetris:
         self._game_over = False
         self.add_block()
         self._score = 0
-        self._game_speed = 100
+        self.update_game_speed()
 
     def restart_game(self):
         """ Restarts game by removing blocks then reinitialising game."""
@@ -104,13 +105,21 @@ class Tetris:
         """Toggles pause."""
         self._paused = not self._paused
 
+    def update_game_speed(self):
+        """Increases game speed by 4 steps every 10 scores."""
+        self._game_speed = GAME_SPEED_START - 4*(self._score//10)
+        # Cap game speed at 25
+        if self._game_speed < 25: self._game_speed = 25
+
     def check_game_over(self):
         """ Check if any frozen blocks exist in the top row."""
         for block in self._blocks:
-            if block._frozen == 0 and block._y_pos <= GRID_SIZE:
-                self._game_over = True
-                self._paused = True
-                break
+            for column in range(0,(GAME_SIZE[0])//GRID_SIZE):
+                if not self._game_over:
+                    if block._frozen == 0 and block.at_position((column*GRID_SIZE,0)):
+                        self._game_over = True
+                        self._paused = True
+                        break
         if self._game_over:
             if messagebox.showinfo("Tetris", "GAME OVER"):
                 self.restart_game()
@@ -250,6 +259,7 @@ class Tetris:
         # then descend each block
         if rows_full > 0:
             self._score += rows_full
+            self.update_game_speed()
             print('score:',self._score)
 
             for deleted_block in blocks_to_delete:
@@ -352,7 +362,7 @@ class Block(object):
             x_bound,y_bound = (dx,0,GAME_SIZE[0]-GRID_SIZE),(dy,GAME_SIZE[1]-GRID_SIZE*4)
             
         elif self._shape == shape_types[1]:
-            x_bound,y_bound = (dx,GRID_SIZE*2,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*3)
+            x_bound,y_bound = (dx,GRID_SIZE*2,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*4)
 
         elif self._shape == shape_types[2]:
             x_bound,y_bound = (dx,0,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*2)
@@ -398,7 +408,7 @@ class Block(object):
 
             elif dy > 0:
                 add = [1,0,0,GRID_SIZE-1] # readjustments
-                can_move = self.check_block_collisions(blocks,4,True,-GRID_SIZE*2,GRID_SIZE*3,1,0,1,0,add)
+                can_move = self.check_block_collisions(blocks,4,True,-GRID_SIZE*2,GRID_SIZE*4,1,0,1,0,add)
                 if can_move == 0: return
 
         elif self._shape == shape_types[2]:
@@ -496,29 +506,26 @@ class Block(object):
             Parameters: position (tuple x,y): Game position to check.
         """
         x,y = position
+        
         if self._shape == shape_types[0]:
-
             if x in range(self._x_pos,self._x_pos + GRID_SIZE)\
                and y in range(self._y_pos,self._y_pos+GRID_SIZE*4): return True
             
             else: return False
             
         elif self._shape == shape_types[1]:
-            
             if x in range(self._x_pos - GRID_SIZE*2,self._x_pos + GRID_SIZE*2)\
-               and y in range(self._y_pos + GRID_SIZE*2,self._y_pos + GRID_SIZE*3): return True
+               and y in range(self._y_pos + GRID_SIZE*3,self._y_pos + GRID_SIZE*4): return True
 
             else: return False
 
         elif self._shape == shape_types[2]:
-
             if x in range(self._x_pos,self._x_pos + GRID_SIZE*2) \
                and y in range(self._y_pos,self._y_pos+GRID_SIZE*2): return True
             
             else: return False
 
         elif self._shape == shape_types[3]:
-            
             if (x in range(self._x_pos,self._x_pos + GRID_SIZE)\
                and y in range(self._y_pos,self._y_pos+GRID_SIZE*3)) or \
                (x in range(self._x_pos+GRID_SIZE,self._x_pos+GRID_SIZE*2)\
@@ -527,7 +534,6 @@ class Block(object):
             else: return False
 
         elif self._shape == shape_types[4]:
-
             if (x in range(self._x_pos-GRID_SIZE,self._x_pos + GRID_SIZE*2)\
                 and y in range(self._y_pos+GRID_SIZE,self._y_pos+GRID_SIZE*2)) or \
                 (x in range(self._x_pos-GRID_SIZE,self._x_pos)\
@@ -536,7 +542,6 @@ class Block(object):
             else: return False
 
         elif self._shape == shape_types[5]:
-
             if (x in range(self._x_pos,self._x_pos + GRID_SIZE)\
                 and y in range(self._y_pos,self._y_pos+GRID_SIZE*3)) or \
                 (x in range(self._x_pos-GRID_SIZE,self._x_pos)\
@@ -545,7 +550,6 @@ class Block(object):
             else: return False
 
         elif self._shape == shape_types[6]:
-
             if (x in range(self._x_pos-GRID_SIZE,self._x_pos + GRID_SIZE*2)\
                 and y in range(self._y_pos+GRID_SIZE*2,self._y_pos+GRID_SIZE*3)) or \
                 (x in range(self._x_pos+GRID_SIZE,self._x_pos+GRID_SIZE*2)\
@@ -561,20 +565,14 @@ class Block(object):
         
         if self._frozen > 0:
             can_rotate = True
+            
             # If long block rotated is within the game boundaries
             if self._shape == shape_types[0] and self._x_pos in range(GRID_SIZE * 2,GAME_SIZE[0]-GRID_SIZE):
                 # Check if there is collision with the 4 squares of the rotated long block
                 for pos in range(4):
                     if can_rotate:
-                        can_rotate = not self.check_collision(blocks,(self._x_pos + GRID_SIZE*(pos-2),self._y_pos+GRID_SIZE*2))
-
-                # If no colision, undraw current polygon and redraw rotated
-                if can_rotate:   
-                    self._canvas.delete(self.get_block())
-                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[1]],fill=self._colour)
-                    self._shape = shape_types[1]
-                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos)
-                    # ^ This is used as rotated block auto generates at (0,0)
+                        can_rotate = not self.check_collision(blocks,(self._x_pos + GRID_SIZE*(pos-2),self._y_pos+GRID_SIZE*3))
+                new_shape = shape_types[1]
 
             # If long block is within the game boundaries
             elif self._shape == shape_types[1] and self._y_pos < 425:
@@ -582,65 +580,48 @@ class Block(object):
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos,self._y_pos + GRID_SIZE*pos))
+                new_shape = shape_types[0]
 
-                # If no collision, undraw current polygon and redraw rotated
-                if can_rotate:
-                    self._canvas.delete(self.get_block())
-                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[0]],fill=self._colour)
-                    self._shape = shape_types[0]
-                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
-                    # ^ This is used as rotated block auto generates at (0,0)
-
+            # as above
             elif self._shape == shape_types[3] and self._x_pos >= GRID_SIZE:
                 add = [(0,0),(0,0),(0,0),(-3*GRID_SIZE,GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*(pos-1)+add[pos][0],self._y_pos + add[pos][1] + GRID_SIZE*2))
-                       
-                if can_rotate:
-                    self._canvas.delete(self.get_block())
-                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[4]],fill=self._colour)
-                    self._shape = shape_types[4]
-                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
-                    # ^ This is used as rotated block auto generates at (0,0)
+                new_shape = shape_types[4]
 
             elif self._shape == shape_types[4]:
                 add = [(0,0),(0,0),(0,0),(-3*GRID_SIZE,-GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][1],self._y_pos+GRID_SIZE*pos+add[pos][0]))
-                if can_rotate:
-                    self._canvas.delete(self.get_block())
-                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[5]],fill=self._colour)
-                    self._shape = shape_types[5]
-                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
-                    # ^ This is used as rotated block auto generates at (0,0)
+                new_shape = shape_types[5]
 
             elif self._shape == shape_types[5] and self._x_pos <= GAME_SIZE[0]-GRID_SIZE*2:
                 add = [(0,0),(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*(pos-1)+add[pos][0],self._y_pos+add[pos][1]+GRID_SIZE*2))
-                        
-                if can_rotate:
-                    self._canvas.delete(self.get_block())
-                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[6]],fill=self._colour)
-                    self._shape = shape_types[6]
-                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
-                    # ^ This is used as rotated block auto generates at (0,0)
+                new_shape = shape_types[6]
 
             elif self._shape == shape_types[6]:
                 add = [(0,0),(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos + GRID_SIZE*pos + add[pos][1]))
-                        
-                if can_rotate:
-                    self._canvas.delete(self.get_block())
-                    self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[3]],fill=self._colour)
-                    self._shape = shape_types[3]
-                    self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
-                    # ^ This is used as rotated block auto generates at (0,0)
+                new_shape = shape_types[3]
+            else:
+                new_shape = shape_types[0]
+                can_rotate = False
+
+            # If no colision, undraw current polygon and redraw rotated
+            if can_rotate:   
+                self._canvas.delete(self.get_block())
+                self._block_shape = self._canvas.create_polygon(block_shapes[new_shape],fill=self._colour)
+                self._shape = new_shape
+                self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
+                # ^ This is used as rotated block auto generates at (0,0)
+                    
            
 if __name__ == '__main__':
     root = tk.Tk()
