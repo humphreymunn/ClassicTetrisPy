@@ -12,7 +12,6 @@ from tkinter import messagebox
     - Help pop up
     - increase speed based on score
     - Write more efficient methods for moving and rotating
-    - add code for L block rotation
 """
 
 GRID_SIZE = 25
@@ -447,7 +446,7 @@ class Block(object):
             if dx > 0:
                 for pos in range(3):
                     if can_move:
-                        can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*2,self._y_pos + GRID_SIZE*pos))
+                        can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE,self._y_pos + GRID_SIZE*pos))
             elif dx < 0:
                 add = [-GRID_SIZE,0,0]
                 for pos in range(3):
@@ -468,12 +467,12 @@ class Block(object):
             if dx > 0:
                 for pos in range(2):
                     if can_move:
-                        can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*3,self._y_pos + GRID_SIZE*pos))
+                        can_move = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*2,self._y_pos + GRID_SIZE*(pos+1)))
             elif dx < 0:
                 add = [0,-GRID_SIZE*2]
                 for pos in range(2):
                     if can_move:
-                        can_move = not self.check_collision(blocks,(self._x_pos+add[pos],self._y_pos + GRID_SIZE*pos))
+                        can_move = not self.check_collision(blocks,(self._x_pos+add[pos],self._y_pos + GRID_SIZE*(pos+1)))
             elif dy > 0:
                 for pos in range(3):
                     if can_move:
@@ -607,7 +606,12 @@ class Block(object):
                     self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
                     # ^ This is used as rotated block auto generates at (0,0)
 
-            elif self._shape == shape_types[3]:
+            elif self._shape == shape_types[3] and self._x_pos >= GRID_SIZE:
+                add = [(0,0),(0,0),(0,0),(-3*GRID_SIZE,GRID_SIZE)]
+                for pos in range(4):
+                    if can_rotate:
+                        can_rotate = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*(pos-1)+add[pos][0],self._y_pos + add[pos][1] + GRID_SIZE*2))
+                       
                 if can_rotate:
                     self._canvas.delete(self.get_block())
                     self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[4]],fill=self._colour)
@@ -616,6 +620,10 @@ class Block(object):
                     # ^ This is used as rotated block auto generates at (0,0)
 
             elif self._shape == shape_types[4]:
+                add = [(0,0),(0,0),(0,0),(-3*GRID_SIZE,-GRID_SIZE)]
+                for pos in range(4):
+                    if can_rotate:
+                        can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][1],self._y_pos+GRID_SIZE*pos+add[pos][0]))
                 if can_rotate:
                     self._canvas.delete(self.get_block())
                     self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[5]],fill=self._colour)
@@ -624,6 +632,11 @@ class Block(object):
                     # ^ This is used as rotated block auto generates at (0,0)
 
             elif self._shape == shape_types[5]:
+                add = [(0,0),(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE)]
+                for pos in range(4):
+                    if can_rotate:
+                        can_rotate = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*(pos-1)+add[pos][0],self._y_pos+add[pos][1]+GRID_SIZE*2))
+                        
                 if can_rotate:
                     self._canvas.delete(self.get_block())
                     self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[6]],fill=self._colour)
@@ -632,15 +645,17 @@ class Block(object):
                     # ^ This is used as rotated block auto generates at (0,0)
 
             elif self._shape == shape_types[6]:
+                add = [(0,0),(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE)]
+                for pos in range(4):
+                    if can_rotate:
+                        can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos + GRID_SIZE*pos + add[pos][1]))
+                        
                 if can_rotate:
                     self._canvas.delete(self.get_block())
                     self._block_shape = self._canvas.create_polygon(block_shapes[shape_types[3]],fill=self._colour)
                     self._shape = shape_types[3]
                     self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
                     # ^ This is used as rotated block auto generates at (0,0)
-
-
-
            
 if __name__ == '__main__':
     root = tk.Tk()
