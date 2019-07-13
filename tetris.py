@@ -11,15 +11,13 @@ import random
 from tkinter import messagebox
 
 """ TODO:
-    - add T block
     - display score
     - Start/Game over screens?
     - Help pop up
-    - improve keyboard input (e.g. down arrow slow)
     - Game over change ??
     - sounds
     - Glitch some blocks dont fall on row completion
-    - Fix tkinter bind when window expand
+    - more comments to code & improve code efficiency
 """
 
 GRID_SIZE = 25
@@ -29,7 +27,8 @@ GAME_SPEED_START = 200
 shape_types = ('i_block','i_block_r1','o_block',\
                'l_block','l_block_r1','l_block_r2','l_block_r3',\
                'j_block','j_block_r1','j_block_r2','j_block_r3',\
-               'z_block','z_block_r1','s_block','s_block_r1') # Shape type constants
+               'z_block','z_block_r1','s_block','s_block_r1',\
+               't_block','t_block_r1','t_block_r2','t_block_r3') # Shape type constants
 
 # Polygon points (top left is (0,0))
 block_shapes = {
@@ -93,7 +92,27 @@ block_shapes = {
     's_block_r1': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
                    (GRID_SIZE,0),(GRID_SIZE*2,0),\
                    (GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE,GRID_SIZE*2),\
-                   (GRID_SIZE,GRID_SIZE),(0,GRID_SIZE)]
+                   (GRID_SIZE,GRID_SIZE),(0,GRID_SIZE)],
+
+    't_block': [(-GRID_SIZE,0),(GRID_SIZE*2,0),\
+                (GRID_SIZE*2,GRID_SIZE),(GRID_SIZE,GRID_SIZE),\
+                (GRID_SIZE,GRID_SIZE*2),(0,GRID_SIZE*2),\
+                (0,GRID_SIZE),(-GRID_SIZE,GRID_SIZE)],
+
+    't_block_r1': [(GRID_SIZE,-GRID_SIZE),(GRID_SIZE,GRID_SIZE*2),\
+                   (0,GRID_SIZE*2),(0,GRID_SIZE),\
+                   (-GRID_SIZE,GRID_SIZE),(-GRID_SIZE,0),\
+                   (0,0),(0,-GRID_SIZE)],
+
+    't_block_r2': [(GRID_SIZE*2,GRID_SIZE),(-GRID_SIZE,GRID_SIZE),\
+                   (-GRID_SIZE,0),(0,0),\
+                   (0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
+                   (GRID_SIZE,0),(GRID_SIZE*2,0)],
+
+    't_block_r3': [(0,-GRID_SIZE),(0,GRID_SIZE*2),\
+                   (GRID_SIZE,GRID_SIZE*2),(GRID_SIZE,GRID_SIZE),\
+                   (GRID_SIZE*2,GRID_SIZE),(GRID_SIZE*2,0),\
+                   (GRID_SIZE,0),(GRID_SIZE,-GRID_SIZE)]
 }
 
 class Tetris:
@@ -112,15 +131,15 @@ class Tetris:
 
         # Left frame
         self._lf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
-        self._lf.pack(side=tk.LEFT)
+        self._lf.pack(side=tk.LEFT,expand=True,fill='both')
         
         # Game canvas
         self._canvas = tk.Canvas(master,width=GAME_SIZE[0],height=GAME_SIZE[1]) #Game view canvas
-        self._canvas.pack(side=tk.LEFT,fill='both',expand=True)
+        self._canvas.pack(side=tk.LEFT,anchor=tk.S)
 
         # Right frame
         self._rf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
-        self._rf.pack(side=tk.LEFT)
+        self._rf.pack(side=tk.RIGHT,expand=True,fill='both')
         
         self._master.bind('<Key>',self.move_block)
 
@@ -182,7 +201,7 @@ class Tetris:
         for i in range(6):
             rgb += random.choice(['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'])
 
-        shape = random.choice([0,2,3,7,11,13])
+        shape = random.choice([0,2,3,7,11,13,15])
         shape = shape_types[shape]
         colour = rgb
 
@@ -408,21 +427,21 @@ class Block(object):
         elif self._shape == shape_types[2]:
             x_bound,y_bound = (dx,0,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*2)
 
-        elif self._shape in [shape_types[3],shape_types[9],shape_types[14]]:
+        elif self._shape in [shape_types[3],shape_types[9],shape_types[14],shape_types[18]]:
             x_bound,y_bound = (dx,0,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*3)
 
         elif self._shape in [shape_types[4],shape_types[6]]:
             x_bound,y_bound = (dx,GRID_SIZE,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*3)
 
-        elif self._shape in [shape_types[5],shape_types[7],shape_types[12]]:
+        elif self._shape in [shape_types[5],shape_types[7],shape_types[12],shape_types[16]]:
             x_bound,y_bound = (dx,GRID_SIZE,GAME_SIZE[0]-GRID_SIZE),(dy,GAME_SIZE[1]-GRID_SIZE*3)
 
-        elif self._shape in [shape_types[8],shape_types[10]]:
+        elif self._shape in [shape_types[8],shape_types[10],shape_types[17]]:
             x_bound,y_bound = (dx,GRID_SIZE,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*2)
 
-        elif self._shape in [shape_types[11],shape_types[13]]:
+        elif self._shape in [shape_types[11],shape_types[13],shape_types[15]]:
             x_bound,y_bound = (dx,GRID_SIZE,GAME_SIZE[0]-GRID_SIZE*2),(dy,GAME_SIZE[1]-GRID_SIZE*3)
-
+            
         else:
             x_bound,y_bound = (0,0,0),(0,0)
 
@@ -625,6 +644,60 @@ class Block(object):
                 add = [-GRID_SIZE,0] # readjustments
                 can_move = self.check_block_collisions(blocks,2,True,0,GRID_SIZE*3,1,0,0,1,add)
                 if can_move == 0: return
+
+        elif self._shape == shape_types[15]:
+            if dx > 0:
+                add = [0,-GRID_SIZE] # readjustments
+                can_move = self.check_block_collisions(blocks,2,False,GRID_SIZE*2,GRID_SIZE,0,1,1,0,add)
+
+            elif dx < 0:
+                add = [0,GRID_SIZE] # readjustments
+                can_move = self.check_block_collisions(blocks,2,False,-GRID_SIZE*2,GRID_SIZE,0,1,1,0,add)
+
+            elif dy > 0:
+                add = [0,GRID_SIZE,0] # readjustments
+                can_move = self.check_block_collisions(blocks,3,True,-GRID_SIZE,GRID_SIZE*2,1,0,0,1,add)
+                if can_move == 0: return
+
+        elif self._shape == shape_types[16]:
+            if dx > 0:
+                can_move = self.check_block_collisions(blocks,3,False,GRID_SIZE,0,0,1,0,0,[])
+
+            elif dx < 0:
+                add = [0,-GRID_SIZE,0] # readjustments
+                can_move = self.check_block_collisions(blocks,3,False,-GRID_SIZE,0,0,1,1,0,add)
+
+            elif dy > 0:
+                add = [-GRID_SIZE,0]
+                can_move = self.check_block_collisions(blocks,2,True,-GRID_SIZE,GRID_SIZE*3,1,0,0,1,add)
+                if can_move == 0: return
+
+        elif self._shape == shape_types[17]:
+            if dx > 0:
+                add = [-GRID_SIZE,0] # readjustments
+                can_move = self.check_block_collisions(blocks,2,False,GRID_SIZE*2,0,0,1,1,0,add)
+
+            elif dx < 0:
+                add = [GRID_SIZE,0] # readjustments
+                can_move = self.check_block_collisions(blocks,2,False,-GRID_SIZE*2,0,0,1,1,0,add)
+
+            elif dy > 0:
+                can_move = self.check_block_collisions(blocks,3,True,-GRID_SIZE,GRID_SIZE*2,1,0,0,0,[])
+                if can_move == 0: return
+
+        elif self._shape == shape_types[18]:
+            if dx > 0:
+                add = [0,GRID_SIZE,0] # readjustments
+                can_move = self.check_block_collisions(blocks,3,False,GRID_SIZE,0,0,1,1,0,add)
+                
+            elif dx < 0:
+                can_move = self.check_block_collisions(blocks,3,False,-GRID_SIZE,0,0,1,0,0,[])
+                
+            elif dy > 0:
+                add = [0,-GRID_SIZE]
+                can_move = self.check_block_collisions(blocks,2,True,0,GRID_SIZE*3,1,0,0,1,add)
+                if can_move == 0: return
+
                 
         # If block will not collide and isn't frozen, move it in specified direction.
         if can_move and self._frozen > 0:
@@ -770,6 +843,38 @@ class Block(object):
                  and y in range(self._y_pos+GRID_SIZE,self._y_pos+GRID_SIZE*3)): return True
 
             else: return False
+
+        elif self._shape == shape_types[15]:
+            if (x in range(self._x_pos-GRID_SIZE,self._x_pos + GRID_SIZE*2)\
+                and y in range(self._y_pos + GRID_SIZE,self._y_pos+GRID_SIZE*2)) or \
+                (x in range(self._x_pos,self._x_pos+GRID_SIZE)\
+                 and y in range(self._y_pos+GRID_SIZE*2,self._y_pos+GRID_SIZE*3)): return True
+
+            else: return False
+
+        elif self._shape == shape_types[16]:
+            if (x in range(self._x_pos,self._x_pos + GRID_SIZE)\
+                and y in range(self._y_pos,self._y_pos+GRID_SIZE*3)) or \
+                (x in range(self._x_pos-GRID_SIZE,self._x_pos)\
+                 and y in range(self._y_pos+GRID_SIZE,self._y_pos+GRID_SIZE*2)): return True
+
+            else: return False
+            
+        elif self._shape == shape_types[17]:
+            if (x in range(self._x_pos-GRID_SIZE,self._x_pos + GRID_SIZE*2)\
+                and y in range(self._y_pos + GRID_SIZE,self._y_pos+GRID_SIZE*2)) or \
+                (x in range(self._x_pos,self._x_pos+GRID_SIZE)\
+                 and y in range(self._y_pos,self._y_pos+GRID_SIZE)): return True
+
+            else: return False
+
+        elif self._shape == shape_types[18]:
+            if (x in range(self._x_pos,self._x_pos + GRID_SIZE)\
+                and y in range(self._y_pos,self._y_pos+GRID_SIZE*3)) or \
+                (x in range(self._x_pos+GRID_SIZE,self._x_pos+GRID_SIZE*2)\
+                 and y in range(self._y_pos+GRID_SIZE,self._y_pos+GRID_SIZE*2)): return True
+
+            else: return False
             
     def rotate(self,deg,blocks):
         """ Rotate block left/right depending on deg (degree), if there is no collision at the rotated position.
@@ -861,7 +966,7 @@ class Block(object):
                         can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos + GRID_SIZE*pos + add[pos][1]))  
                 new_shape = shape_types[12]
 
-            elif self._shape == shape_types[12] and self._x_pos <= GAME_SIZE[1]-GRID_SIZE:
+            elif self._shape == shape_types[12] and self._x_pos <= GAME_SIZE[0]-GRID_SIZE:
                 add = [(0,0),(0,0),(-GRID_SIZE,GRID_SIZE),(-GRID_SIZE,GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
@@ -881,6 +986,34 @@ class Block(object):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos-GRID_SIZE+GRID_SIZE*pos+add[pos][0],self._y_pos + GRID_SIZE*2 + add[pos][1]))     
                 new_shape = shape_types[13]
+
+            elif self._shape == shape_types[15]:
+                add = [(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE),(0,-GRID_SIZE)]
+                for pos in range(4):
+                    if can_rotate:
+                        can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos + GRID_SIZE*pos - GRID_SIZE + add[pos][1]))
+                new_shape = shape_types[16]
+
+            elif self._shape == shape_types[16] and self._x_pos <= GAME_SIZE[0] - GRID_SIZE*2:
+                add = [(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE),(-GRID_SIZE,0)]
+                for pos in range(4):
+                    if can_rotate:
+                        can_rotate = not self.check_collision(blocks,(self._x_pos-GRID_SIZE+GRID_SIZE*pos+add[pos][0],self._y_pos + GRID_SIZE + add[pos][1]))
+                new_shape = shape_types[17]
+
+            elif self._shape == shape_types[17]:
+                add = [(0,0),(0,0),(GRID_SIZE,-GRID_SIZE),(0,-GRID_SIZE)]
+                for pos in range(4):
+                    if can_rotate:
+                        can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos + GRID_SIZE*pos - GRID_SIZE + add[pos][1]))
+                new_shape = shape_types[18]
+
+            elif self._shape == shape_types[18] and self._x_pos >= GRID_SIZE:
+                add = [(0,0),(0,0),(-GRID_SIZE,GRID_SIZE),(-GRID_SIZE,0)]
+                for pos in range(4):
+                    if can_rotate:
+                        can_rotate = not self.check_collision(blocks,(self._x_pos-GRID_SIZE+GRID_SIZE*pos+add[pos][0],self._y_pos + GRID_SIZE + add[pos][1]))
+                new_shape = shape_types[15]
                 
             else:
                 new_shape = shape_types[0]
