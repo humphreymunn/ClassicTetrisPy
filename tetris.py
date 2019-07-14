@@ -11,9 +11,7 @@ import random
 from tkinter import messagebox
 
 """ TODO:
-    - display score
     - Start/Game over screens?
-    - Help pop up
     - Game over change ??
     - sounds
     - Glitch some blocks dont fall on row completion
@@ -30,89 +28,90 @@ shape_types = ('i_block','i_block_r1','o_block',\
                'z_block','z_block_r1','s_block','s_block_r1',\
                't_block','t_block_r1','t_block_r2','t_block_r3') # Shape type constants
 
+gs = GRID_SIZE # for drawing polygons (less text)
 # Polygon points (top left is (0,0))
 block_shapes = {
     
-    'i_block': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
-                   (GRID_SIZE,GRID_SIZE*4-GRID_SIZE),(0,GRID_SIZE*4-GRID_SIZE)],
+    'i_block': [(0,-gs),(gs,-gs),\
+                   (gs,gs*4-gs),(0,gs*4-gs)],
     
-    'i_block_r1': [(-GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE*2,GRID_SIZE*2),\
-                          (GRID_SIZE*2,GRID_SIZE*3),(-GRID_SIZE*2,GRID_SIZE*3)],
+    'i_block_r1': [(-gs*2,gs*2),(gs*2,gs*2),\
+                          (gs*2,gs*3),(-gs*2,gs*3)],
     
-    'o_block': [(0,-GRID_SIZE),(GRID_SIZE*2,-GRID_SIZE),\
-                     (GRID_SIZE*2,GRID_SIZE*2 - GRID_SIZE),(0,GRID_SIZE*2 - GRID_SIZE)],
+    'o_block': [(0,-gs),(gs*2,-gs),\
+                     (gs*2,gs*2 - gs),(0,gs*2 - gs)],
 
-    'l_block': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
-                    (GRID_SIZE,GRID_SIZE*2-GRID_SIZE),(GRID_SIZE*2,GRID_SIZE*2-GRID_SIZE),\
-                        (GRID_SIZE*2,GRID_SIZE*3-GRID_SIZE),(0,GRID_SIZE*3-GRID_SIZE)],
+    'l_block': [(0,-gs),(gs,-gs),\
+                    (gs,gs*2-gs),(gs*2,gs*2-gs),\
+                        (gs*2,gs*3-gs),(0,gs*3-gs)],
     
-    'l_block_r1': [(-GRID_SIZE,0),(GRID_SIZE*2,0),\
-                   (GRID_SIZE*2,GRID_SIZE),(0,GRID_SIZE),\
-                   (0,GRID_SIZE*2),(-GRID_SIZE,GRID_SIZE*2)],
+    'l_block_r1': [(-gs,0),(gs*2,0),\
+                   (gs*2,gs),(0,gs),\
+                   (0,gs*2),(-gs,gs*2)],
 
-    'l_block_r2': [(-GRID_SIZE,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
-                       (GRID_SIZE,GRID_SIZE*3-GRID_SIZE),(0,GRID_SIZE*3-GRID_SIZE),\
-                           (0,0),(-GRID_SIZE,0)],
+    'l_block_r2': [(-gs,-gs),(gs,-gs),\
+                       (gs,gs*3-gs),(0,gs*3-gs),\
+                           (0,0),(-gs,0)],
 
-    'l_block_r3': [(-GRID_SIZE,GRID_SIZE),(GRID_SIZE,GRID_SIZE),\
-                   (GRID_SIZE,0),(GRID_SIZE*2,0),\
-                   (GRID_SIZE*2,GRID_SIZE*2),(-GRID_SIZE,GRID_SIZE*2)],
+    'l_block_r3': [(-gs,gs),(gs,gs),\
+                   (gs,0),(gs*2,0),\
+                   (gs*2,gs*2),(-gs,gs*2)],
 
-    'j_block': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
-                (GRID_SIZE,GRID_SIZE*3-GRID_SIZE),(-GRID_SIZE,GRID_SIZE*3-GRID_SIZE),\
-                (-GRID_SIZE,GRID_SIZE*2-GRID_SIZE),(0,GRID_SIZE*2-GRID_SIZE)],
+    'j_block': [(0,-gs),(gs,-gs),\
+                (gs,gs*3-gs),(-gs,gs*3-gs),\
+                (-gs,gs*2-gs),(0,gs*2-gs)],
     
-    'j_block_r1': [(-GRID_SIZE,-GRID_SIZE),(0,-GRID_SIZE),\
-                   (0,0),(GRID_SIZE*2,0),\
-                   (GRID_SIZE*2,GRID_SIZE),(-GRID_SIZE,GRID_SIZE)],
+    'j_block_r1': [(-gs,-gs),(0,-gs),\
+                   (0,0),(gs*2,0),\
+                   (gs*2,gs),(-gs,gs)],
     
-    'j_block_r2': [(0,-GRID_SIZE),(GRID_SIZE*2,-GRID_SIZE),\
-                   (GRID_SIZE*2,0),(GRID_SIZE,0),\
-                   (GRID_SIZE,GRID_SIZE*2),(0,GRID_SIZE*2)],
+    'j_block_r2': [(0,-gs),(gs*2,-gs),\
+                   (gs*2,0),(gs,0),\
+                   (gs,gs*2),(0,gs*2)],
     
-    'j_block_r3': [(-GRID_SIZE,-GRID_SIZE),(GRID_SIZE*2,-GRID_SIZE),\
-                   (GRID_SIZE*2,GRID_SIZE),(GRID_SIZE,GRID_SIZE),\
-                   (GRID_SIZE,0),(-GRID_SIZE,0)],
+    'j_block_r3': [(-gs,-gs),(gs*2,-gs),\
+                   (gs*2,gs),(gs,gs),\
+                   (gs,0),(-gs,0)],
     
-    'z_block': [(-GRID_SIZE,0),(GRID_SIZE,0),\
-                (GRID_SIZE,GRID_SIZE),(GRID_SIZE*2,GRID_SIZE),\
-                (GRID_SIZE*2,GRID_SIZE*2),(0,GRID_SIZE*2),\
-                (0,GRID_SIZE),(-GRID_SIZE,GRID_SIZE)],
+    'z_block': [(-gs,0),(gs,0),\
+                (gs,gs),(gs*2,gs),\
+                (gs*2,gs*2),(0,gs*2),\
+                (0,gs),(-gs,gs)],
 
-    'z_block_r1': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
-                   (GRID_SIZE,GRID_SIZE),(0,GRID_SIZE),\
-                   (0,GRID_SIZE*2),(-GRID_SIZE,GRID_SIZE*2),\
-                   (-GRID_SIZE,0),(0,0)],
+    'z_block_r1': [(0,-gs),(gs,-gs),\
+                   (gs,gs),(0,gs),\
+                   (0,gs*2),(-gs,gs*2),\
+                   (-gs,0),(0,0)],
     
-    's_block': [(0,0),(GRID_SIZE*2,0),\
-                (GRID_SIZE*2,GRID_SIZE),(GRID_SIZE,GRID_SIZE),\
-                (GRID_SIZE,GRID_SIZE*2),(-GRID_SIZE,GRID_SIZE*2),\
-                (-GRID_SIZE,GRID_SIZE),(0,GRID_SIZE)],
+    's_block': [(0,0),(gs*2,0),\
+                (gs*2,gs),(gs,gs),\
+                (gs,gs*2),(-gs,gs*2),\
+                (-gs,gs),(0,gs)],
 
-    's_block_r1': [(0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
-                   (GRID_SIZE,0),(GRID_SIZE*2,0),\
-                   (GRID_SIZE*2,GRID_SIZE*2),(GRID_SIZE,GRID_SIZE*2),\
-                   (GRID_SIZE,GRID_SIZE),(0,GRID_SIZE)],
+    's_block_r1': [(0,-gs),(gs,-gs),\
+                   (gs,0),(gs*2,0),\
+                   (gs*2,gs*2),(gs,gs*2),\
+                   (gs,gs),(0,gs)],
 
-    't_block': [(-GRID_SIZE,0),(GRID_SIZE*2,0),\
-                (GRID_SIZE*2,GRID_SIZE),(GRID_SIZE,GRID_SIZE),\
-                (GRID_SIZE,GRID_SIZE*2),(0,GRID_SIZE*2),\
-                (0,GRID_SIZE),(-GRID_SIZE,GRID_SIZE)],
+    't_block': [(-gs,0),(gs*2,0),\
+                (gs*2,gs),(gs,gs),\
+                (gs,gs*2),(0,gs*2),\
+                (0,gs),(-gs,gs)],
 
-    't_block_r1': [(GRID_SIZE,-GRID_SIZE),(GRID_SIZE,GRID_SIZE*2),\
-                   (0,GRID_SIZE*2),(0,GRID_SIZE),\
-                   (-GRID_SIZE,GRID_SIZE),(-GRID_SIZE,0),\
-                   (0,0),(0,-GRID_SIZE)],
+    't_block_r1': [(gs,-gs),(gs,gs*2),\
+                   (0,gs*2),(0,gs),\
+                   (-gs,gs),(-gs,0),\
+                   (0,0),(0,-gs)],
 
-    't_block_r2': [(GRID_SIZE*2,GRID_SIZE),(-GRID_SIZE,GRID_SIZE),\
-                   (-GRID_SIZE,0),(0,0),\
-                   (0,-GRID_SIZE),(GRID_SIZE,-GRID_SIZE),\
-                   (GRID_SIZE,0),(GRID_SIZE*2,0)],
+    't_block_r2': [(gs*2,gs),(-gs,gs),\
+                   (-gs,0),(0,0),\
+                   (0,-gs),(gs,-gs),\
+                   (gs,0),(gs*2,0)],
 
-    't_block_r3': [(0,-GRID_SIZE),(0,GRID_SIZE*2),\
-                   (GRID_SIZE,GRID_SIZE*2),(GRID_SIZE,GRID_SIZE),\
-                   (GRID_SIZE*2,GRID_SIZE),(GRID_SIZE*2,0),\
-                   (GRID_SIZE,0),(GRID_SIZE,-GRID_SIZE)]
+    't_block_r3': [(0,-gs),(0,gs*2),\
+                   (gs,gs*2),(gs,gs),\
+                   (gs*2,gs),(gs*2,0),\
+                   (gs,0),(gs,-gs)]
 }
 
 class Tetris:
@@ -127,7 +126,7 @@ class Tetris:
         file_menu = tk.Menu(menubar)
         menubar.add_cascade(label="File",menu=file_menu)
         file_menu.add_command(label="New Game",command=self.restart_game)
-        file_menu.add_command(label="Help")
+        file_menu.add_command(label="Help",command=self.show_help)
 
         # Left frame
         self._lf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
@@ -140,6 +139,8 @@ class Tetris:
         # Right frame
         self._rf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
         self._rf.pack(side=tk.RIGHT,expand=True,fill='both')
+        self._score_label = tk.Label(self._rf, text="Score: 0", font=("Century Gothic", 18),bg='#CCCCCC',width=12)
+        self._score_label.pack(side=tk.RIGHT)
         
         self._master.bind('<Key>',self.move_block)
 
@@ -167,6 +168,17 @@ class Tetris:
     def pause(self):
         """Toggles pause."""
         self._paused = not self._paused
+
+    def show_help(self):
+        self.pause()
+        message = "AIM: \nComplete (fill) as many rows \
+as you can. When a row is completed, all blocks will be removed in that row. \
+The rows you complete are added to your overall score. \n\n\
+CONTROLS: \nArrow keys (left, right, down): move current block. \n\
+z/x: rotate the block clockwise"
+        
+        if messagebox.showinfo("Tetris - HELP", message):
+            self.pause()
 
     def update_game_speed(self):
         """Increases game speed by 4 steps every 10 scores."""
@@ -243,8 +255,11 @@ class Tetris:
                     block_to_move.move((GRID_SIZE,0),self._blocks)
                 elif key == "DOWN":
                     block_to_move.move((0,GRID_SIZE),self._blocks)
-                elif key == 'Z' or key == 'X':
+                elif key == 'Z':
                     block_to_move.rotate(0,self._blocks)
+                elif key == 'X':
+                    block_to_move.rotate(1,self._blocks)
+                    
                     
             # If all blocks are frozen, create new block
             elif not block_to_move:
@@ -321,7 +336,7 @@ class Tetris:
             self._score += rows_full
             self.update_game_speed()
             print('score:',self._score)
-
+            self._score_label.configure(text="Score: " + str(self._score))
             for deleted_block in blocks_to_delete:
                 if deleted_block in self._blocks:
                     deleted_block._canvas.delete(deleted_block.get_block())
@@ -879,7 +894,7 @@ class Block(object):
     def rotate(self,deg,blocks):
         """ Rotate block left/right depending on deg (degree), if there is no collision at the rotated position.
             Parameters:
-                deg (int): 0 if anti-clockwise, 1 if clockwise
+                deg (int): 0 if clockwise, 1 if anti-clockwise
                 blocks (list): List of blocks in the game.
         """
         
@@ -903,56 +918,62 @@ class Block(object):
                 new_shape = shape_types[0]
 
             # as above
-            elif self._shape == shape_types[3] and self._x_pos >= GRID_SIZE:
+            elif ((self._shape == shape_types[3] and deg == 0)\
+                 or (self._shape == shape_types[5] and deg == 1)) and self._x_pos >= GRID_SIZE:
                 add = [(0,0),(0,0),(0,0),(-3*GRID_SIZE,GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*(pos-1)+add[pos][0],self._y_pos + add[pos][1] + GRID_SIZE*2))
                 new_shape = shape_types[4]
 
-            elif self._shape == shape_types[4]:
+            elif (self._shape == shape_types[4] and deg == 0) or (self._shape == shape_types[6] and deg == 1):
                 add = [(0,0),(0,0),(0,0),(-GRID_SIZE,-3*GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos+GRID_SIZE*pos+add[pos][1]))
                 new_shape = shape_types[5]
 
-            elif self._shape == shape_types[5] and self._x_pos <= GAME_SIZE[0]-GRID_SIZE*2:
+            elif ((self._shape == shape_types[5] and deg == 0)\
+                 or (self._shape == shape_types[3] and deg == 1)) and self._x_pos <= GAME_SIZE[0]-GRID_SIZE*2:
                 add = [(0,0),(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*(pos-1)+add[pos][0],self._y_pos+add[pos][1]+GRID_SIZE*2))
                 new_shape = shape_types[6]
 
-            elif self._shape == shape_types[6]:
+            elif (self._shape == shape_types[6] and deg == 0) or (self._shape == shape_types[4] and deg == 1):
                 add = [(0,0),(0,0),(0,0),(GRID_SIZE,-GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos + GRID_SIZE*pos + add[pos][1]))
                 new_shape = shape_types[3]
 
-            elif self._shape == shape_types[7] and self._x_pos <= GAME_SIZE[0]-GRID_SIZE*2:
+            elif ((self._shape == shape_types[7] and deg == 0)\
+                 or (self._shape == shape_types[9] and deg == 1)) and self._x_pos <= GAME_SIZE[0]-GRID_SIZE*2:
                 add = [(0,0),(0,0),(0,0),(-GRID_SIZE,GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*(pos-1)+add[pos][0],self._y_pos + add[pos][1] + GRID_SIZE*2))
                 new_shape = shape_types[8]
 
-            elif self._shape == shape_types[8] and self._y_pos <= GAME_SIZE[1]-GRID_SIZE*3:
+            elif ((self._shape == shape_types[8] and deg == 0)\
+                 or (self._shape == shape_types[10] and deg == 1)) and self._y_pos <= GAME_SIZE[1]-GRID_SIZE*3:
                 add = [(0,0),(0,0),(0,0),(GRID_SIZE,-3*GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos+GRID_SIZE*pos+add[pos][1]))
                 new_shape = shape_types[9]
 
-            elif self._shape == shape_types[9] and self._x_pos >= GRID_SIZE:
+            elif ((self._shape == shape_types[9] and deg == 0)\
+                 or (self._shape == shape_types[7] and deg == 1)) and self._x_pos >= GRID_SIZE:
                 add = [(0,0),(0,0),(0,0),(-GRID_SIZE,GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+GRID_SIZE*(pos-1)+add[pos][0],self._y_pos+add[pos][1]+GRID_SIZE*2))
                 new_shape = shape_types[10]
 
-            elif self._shape == shape_types[10] and self._y_pos <= GAME_SIZE[1]-GRID_SIZE*3:
+            elif ((self._shape == shape_types[10] and deg == 0)\
+                 or (self._shape == shape_types[8] and deg == 1)) and self._y_pos <= GAME_SIZE[1]-GRID_SIZE*3:
                 add = [(0,0),(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
@@ -966,7 +987,7 @@ class Block(object):
                         can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos + GRID_SIZE*pos + add[pos][1]))  
                 new_shape = shape_types[12]
 
-            elif self._shape == shape_types[12] and self._x_pos <= GAME_SIZE[0]-GRID_SIZE:
+            elif self._shape == shape_types[12] and self._x_pos <= GAME_SIZE[0]-GRID_SIZE*2:
                 add = [(0,0),(0,0),(-GRID_SIZE,GRID_SIZE),(-GRID_SIZE,GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
@@ -987,28 +1008,30 @@ class Block(object):
                         can_rotate = not self.check_collision(blocks,(self._x_pos-GRID_SIZE+GRID_SIZE*pos+add[pos][0],self._y_pos + GRID_SIZE*2 + add[pos][1]))     
                 new_shape = shape_types[13]
 
-            elif self._shape == shape_types[15]:
+            elif (self._shape == shape_types[15] and deg == 0) or (self._shape == shape_types[17] and deg == 1):
                 add = [(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE),(0,-GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos + GRID_SIZE*pos - GRID_SIZE + add[pos][1]))
                 new_shape = shape_types[16]
 
-            elif self._shape == shape_types[16] and self._x_pos <= GAME_SIZE[0] - GRID_SIZE*2:
+            elif ((self._shape == shape_types[16] and deg == 0)\
+                 or (self._shape == shape_types[18] and deg == 1)) and self._x_pos <= GAME_SIZE[0] - GRID_SIZE*2:
                 add = [(0,0),(0,0),(-GRID_SIZE,-GRID_SIZE),(-GRID_SIZE,0)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos-GRID_SIZE+GRID_SIZE*pos+add[pos][0],self._y_pos + GRID_SIZE + add[pos][1]))
                 new_shape = shape_types[17]
 
-            elif self._shape == shape_types[17]:
+            elif (self._shape == shape_types[17] and deg == 0) or (self._shape == shape_types[15] and deg == 1):
                 add = [(0,0),(0,0),(GRID_SIZE,-GRID_SIZE),(0,-GRID_SIZE)]
                 for pos in range(4):
                     if can_rotate:
                         can_rotate = not self.check_collision(blocks,(self._x_pos+add[pos][0],self._y_pos + GRID_SIZE*pos - GRID_SIZE + add[pos][1]))
                 new_shape = shape_types[18]
 
-            elif self._shape == shape_types[18] and self._x_pos >= GRID_SIZE:
+            elif ((self._shape == shape_types[18] and deg == 0)\
+                 or (self._shape == shape_types[16] and deg == 1)) and self._x_pos >= GRID_SIZE:
                 add = [(0,0),(0,0),(-GRID_SIZE,GRID_SIZE),(-GRID_SIZE,0)]
                 for pos in range(4):
                     if can_rotate:
