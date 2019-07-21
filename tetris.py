@@ -12,10 +12,8 @@ from tkinter import messagebox
 
 """ TODO:
     - Start/Game over screens?
-    - Game over change ??
     - sounds
     - Glitch some blocks dont fall on row completion
-    - Highscore?
     - Improved look
 """
 
@@ -120,7 +118,7 @@ class Tetris:
         
         self._master = master
         master.title("Tetris")
-        
+        master.geometry("+250+100")
         # Menubar: File -> *New Game *Help
         menubar = tk.Menu(self._master)
         self._master.config(menu=menubar)
@@ -128,6 +126,22 @@ class Tetris:
         menubar.add_cascade(label="File",menu=file_menu)
         file_menu.add_command(label="New Game",command=self.restart_game)
         file_menu.add_command(label="Help",command=self.show_help)
+
+        # Highscores
+        try:
+            # Read highscores and high score names if file exists
+            txt_file = open('highscores.txt','r')
+            self.high_score = int(txt_file.readline())
+            self.high_score_name = txt_file.readline()             
+            txt_file.close()
+
+        except:
+            # Create file if it doesnt exist
+            txt_file = open('highscores.txt','w')
+            txt_file.write("0\nPlayer 1")
+            self.high_score = 0
+            self.high_score_name = "Player 1"
+            txt_file.close()
 
         # Left frame
         self._lf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
@@ -137,22 +151,27 @@ class Tetris:
         self._canvas = tk.Canvas(master,width=GAME_SIZE[0],height=GAME_SIZE[1]) #Game view canvas
         self._canvas.pack(side=tk.LEFT,anchor=tk.S)
 
+        self.pause_txt = tk.Label(self._master,text="",font=("MS Gothic",40))
+        self.pause_txt.place(x=GAME_SIZE[0]//2+120,y=GAME_SIZE[1]//2-30)
+
         # Right frame
         self._rf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
         self._rf.pack(side=tk.RIGHT,expand=True,fill='both')
         
         # Score text
-        self._score_label = tk.Label(self._rf, text="Score: 0", font=("Century Gothic", 18),bg='#CCCCCC',width=12)
-        self._score_label.pack(side=tk.RIGHT)
+        self._score_label = tk.Label(self._rf, text="Score: 0", font=("Arial Black", 18),bg='#CCCCCC',width=12)
+        self._score_label.pack(side=tk.TOP,expand=True)
+
+        # Highscore text
+        self._hs_label = tk.Label(self._rf, text=("High Score\n"+self.high_score_name+ ": " +str(self.high_score)), font=("Arial Black", 18),bg='#CCCCCC',width=12)
+        self._hs_label.pack(side=tk.TOP,expand=True)
         
         self._master.bind('<Key>',self.move_block)
-
-        self._paused = False
-        self._game_over = False
+        
         self.new_game()
-        
+
         self.descend_blocks() # Start moving the blocks downwards each step
-        
+            
     def new_game(self):
         """ Initialises game."""
         self._blocks = [] #Blocks currently in the game
@@ -162,6 +181,11 @@ class Tetris:
         self._score = 0
         self._score_label.configure(text="Score: " + str(self._score))
         self.update_game_speed()
+        txt_file = open('highscores.txt','r')
+        self.high_score = int(txt_file.readline())
+        self.high_score_name = txt_file.readline()             
+        txt_file.close()
+        self._hs_label.configure(text="High Score\n"+self.high_score_name + ": "+str(self.high_score))
 
     def restart_game(self):
         """ Restarts game by removing blocks then reinitialising game."""
@@ -172,6 +196,10 @@ class Tetris:
     def pause(self):
         """Toggles pause."""
         self._paused = not self._paused
+        if self._paused:
+            self.pause_txt.configure(text="PAUSED")
+        else:
+            self.pause_txt.configure(text="")
 
     def show_help(self):
         """ Show pop up explaining aim of game and controls."""
@@ -183,7 +211,7 @@ The rows you complete are added to your overall score. \n\n\
 CONTROLS: \nArrow keys (left, right, down): move current block. \n\
 z/x: rotate the block clockwise"
         
-        if messagebox.showinfo("Tetris - HELP", message):
+        if messagebox.showinfo("TETRIS - HELP", message):
             self.pause()
 
     def update_game_speed(self):
@@ -202,9 +230,10 @@ z/x: rotate the block clockwise"
                         self._paused = True
                         break
         if self._game_over:
-            if messagebox.showinfo("Tetris", "GAME OVER"):
-                self.restart_game()
-                
+            if messagebox.showinfo("TETRIS", "GAME OVER"):
+                if self._score > self.high_score:
+                    high_score_name_popup = highScorePopup(self._master,self)
+
         return self._game_over
             
     def add_block(self):
@@ -240,7 +269,6 @@ z/x: rotate the block clockwise"
 
         if key == 'P':
             self.pause()
-            print('pause',self._paused)
             return
         
         elif self._paused: return
@@ -351,6 +379,27 @@ z/x: rotate the block clockwise"
                 block._control = False
                 block.move((0,GRID_SIZE),self._blocks)
              
+class highScorePopup(object):
+    def __init__(self,master,tetris_obj):
+        self.name = "Player 1"
+        self.window = tk.Toplevel(master)
+        self.window.geometry("300x150+"+str(GAME_SIZE[0]//2 + 304) + "+"+str(GAME_SIZE[1]//2 + 100))
+        self.high_score_txt = tk.Label(self.window,text="You got a highscore! Please enter your name.")
+        self.high_score_txt.pack(pady = 20)
+        self.name_entry = tk.Entry(self.window)
+        self.name_entry.pack(ipady = 5)
+        self.save_btn = tk.Button(self.window,text="Save",command=self.close)
+        self.save_btn.pack(ipadx = 10,ipady = 5)
+        self._tetris_obj = tetris_obj
+    
+    def close(self):
+        self.name = self.name_entry.get()
+        with open("highscores.txt",'w') as file:
+            file.write(str(self._tetris_obj._score))
+            file.write("\n" + self.name)
+        self._tetris_obj.restart_game()
+        self.window.destroy()
+
 class Block(object):
     """ this is a B l o c c"""
     def __init__(self,canvas,shape,colour,x_pos):
@@ -895,7 +944,7 @@ class Block(object):
                 self._shape = new_shape
                 self._canvas.move(self.get_block(),self._x_pos,self._y_pos+GRID_SIZE)
                 # ^ This is used as rotated block auto generates at (0,0)
-                    
+
 if __name__ == '__main__':
     root = tk.Tk()
     game = Tetris(root)
