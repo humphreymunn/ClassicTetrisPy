@@ -1,7 +1,6 @@
 """
 Author: Humphrey Munn
 2019
-
 """
 
 import tkinter as tk
@@ -143,27 +142,33 @@ class Tetris:
             self.high_score_name = "Player 1"
             txt_file.close()
 
+        # Side frame background
+        self.background = tk.PhotoImage(file="TetrisBackground.png")
+        
         # Left frame
-        self._lf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
+        self._lf = tk.Canvas(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
         self._lf.pack(side=tk.LEFT,expand=True,fill='both')
+        self.bg_left = self._lf.create_image(0,0,anchor=tk.N,image=self.background)
         
         # Game canvas
-        self._canvas = tk.Canvas(master,width=GAME_SIZE[0],height=GAME_SIZE[1]) #Game view canvas
+        self._canvas = tk.Canvas(master,width=GAME_SIZE[0],height=GAME_SIZE[1],bg='#111111') #Game view canvas
         self._canvas.pack(side=tk.LEFT,anchor=tk.S)
 
-        self.pause_txt = tk.Label(self._master,text="",font=("MS Gothic",40))
+        # Pause text
+        self.pause_txt = tk.Label(self._master,text="",font=("MS Gothic",40),bg='#111111',fg='#DDDDDD')
         self.pause_txt.place(x=GAME_SIZE[0]//2+120,y=GAME_SIZE[1]//2-30)
 
         # Right frame
-        self._rf = tk.Frame(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
+        self._rf = tk.Canvas(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
         self._rf.pack(side=tk.RIGHT,expand=True,fill='both')
+        self.bg_right = self._rf.create_image(500,0,anchor=tk.NE,image=self.background)
         
         # Score text
-        self._score_label = tk.Label(self._rf, text="Score: 0", font=("Arial Black", 18),bg='#CCCCCC',width=12)
+        self._score_label = tk.Label(self._rf, text="Score: 0", font=("Arial Black", 18),bg='#333333',fg='#DDDDDD',width=12)
         self._score_label.pack(side=tk.TOP,expand=True)
 
         # Highscore text
-        self._hs_label = tk.Label(self._rf, text=("High Score\n"+self.high_score_name+ ": " +str(self.high_score)), font=("Arial Black", 18),bg='#CCCCCC',width=12)
+        self._hs_label = tk.Label(self._rf, text=("High Score\n"+self.high_score_name+ ": " +str(self.high_score)), font=("Arial Black", 18),bg='#333333',fg='#DDDDDD',width=12)
         self._hs_label.pack(side=tk.TOP,expand=True)
         
         self._master.bind('<Key>',self.move_block)
