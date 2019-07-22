@@ -9,13 +9,6 @@ import random
 
 from tkinter import messagebox
 
-""" TODO:
-    - Start/Game over screens?
-    - sounds
-    - Glitch some blocks dont fall on row completion
-    - Improved look
-"""
-
 GRID_SIZE = 25
 GAME_SIZE = (300,500)
 GAME_SPEED_START = 200
@@ -147,12 +140,14 @@ class Tetris:
         
         # Left frame
         self._lf = tk.Canvas(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
-        self._lf.pack(side=tk.LEFT,expand=True,fill='both')
+        self._lf.pack(side=tk.LEFT,fill='both',anchor=tk.E)
         self.bg_left = self._lf.create_image(0,0,anchor=tk.N,image=self.background)
+        self.logo = tk.Label(self._lf,text="TETRIS",font=("Segoe UI Black",25),bg='#111111',fg='#33FFFF')
+        self.logo.place(x=40,y=20)
         
         # Game canvas
         self._canvas = tk.Canvas(master,width=GAME_SIZE[0],height=GAME_SIZE[1],bg='#111111') #Game view canvas
-        self._canvas.pack(side=tk.LEFT,anchor=tk.S)
+        self._canvas.pack(side=tk.LEFT,anchor=tk.S,fill='both',expand=True)
 
         # Pause text
         self.pause_txt = tk.Label(self._master,text="",font=("MS Gothic",40),bg='#111111',fg='#DDDDDD')
@@ -160,15 +155,15 @@ class Tetris:
 
         # Right frame
         self._rf = tk.Canvas(master,width = 200,height = GAME_SIZE[1],bg='#BBBBBB')
-        self._rf.pack(side=tk.RIGHT,expand=True,fill='both')
+        self._rf.pack(side=tk.RIGHT,fill='both',anchor=tk.E)
         self.bg_right = self._rf.create_image(500,0,anchor=tk.NE,image=self.background)
         
         # Score text
-        self._score_label = tk.Label(self._rf, text="Score: 0", font=("Arial Black", 18),bg='#333333',fg='#DDDDDD',width=12)
+        self._score_label = tk.Label(self._rf, text="Score: 0", font=("Arial Black", 18),bg='#111111',fg='#DDDDDD',width=12)
         self._score_label.pack(side=tk.TOP,expand=True)
 
         # Highscore text
-        self._hs_label = tk.Label(self._rf, text=("High Score\n"+self.high_score_name+ ": " +str(self.high_score)), font=("Arial Black", 18),bg='#333333',fg='#DDDDDD',width=12)
+        self._hs_label = tk.Label(self._rf, text=("High Score\n"+self.high_score_name+ ": " +str(self.high_score)), font=("Arial Black", 18),bg='#111111',fg='#DDDDDD',width=12)
         self._hs_label.pack(side=tk.TOP,expand=True)
         
         self._master.bind('<Key>',self.move_block)
@@ -214,7 +209,8 @@ class Tetris:
 as you can. When a row is completed, all blocks will be removed in that row. \
 The rows you complete are added to your overall score. \n\n\
 CONTROLS: \nArrow keys (left, right, down): move current block. \n\
-z/x: rotate the block clockwise"
+z/x: rotate the block clockwise\n\
+p: toggle game pause"
         
         if messagebox.showinfo("TETRIS - HELP", message):
             self.pause()
@@ -238,6 +234,8 @@ z/x: rotate the block clockwise"
             if messagebox.showinfo("TETRIS", "GAME OVER"):
                 if self._score > self.high_score:
                     high_score_name_popup = highScorePopup(self._master,self)
+                else:
+                    self.restart_game()
 
         return self._game_over
             
@@ -383,6 +381,7 @@ z/x: rotate the block clockwise"
                 block._frozen = 1
                 block._control = False
                 block.move((0,GRID_SIZE),self._blocks)
+            self.check_rows()
              
 class highScorePopup(object):
     def __init__(self,master,tetris_obj):
