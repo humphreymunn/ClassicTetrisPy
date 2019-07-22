@@ -135,7 +135,8 @@ class Tetris:
             self.high_score_name = "Player 1"
             txt_file.close()
 
-        # Side frame background
+        # Side frame background (credit: Barraques.cat, edited with Photoshop)
+        # Link: https://www.barraques.cat/viwall/whomTh_pixelated-texture-wallpaper-texture-pixel-colors-pixelated-textures/
         self.background = tk.PhotoImage(file="TetrisBackground.png")
         
         # Left frame
@@ -186,6 +187,8 @@ class Tetris:
         self.high_score_name = txt_file.readline()             
         txt_file.close()
         self._hs_label.configure(text="High Score\n"+self.high_score_name + ": "+str(self.high_score))
+        self.pause_txt.configure(text="")
+        self.pause_txt.place_forget()
 
     def restart_game(self):
         """ Restarts game by removing blocks then reinitialising game."""
@@ -198,8 +201,10 @@ class Tetris:
         self._paused = not self._paused
         if self._paused:
             self.pause_txt.configure(text="PAUSED")
+            self.pause_txt.place(x=GAME_SIZE[0]//2+120,y=GAME_SIZE[1]//2-30)
         else:
             self.pause_txt.configure(text="")
+            self.pause_txt.place_forget()
 
     def show_help(self):
         """ Show pop up explaining aim of game and controls."""
